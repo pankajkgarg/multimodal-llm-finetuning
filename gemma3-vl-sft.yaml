@@ -1,0 +1,49 @@
+######### Custom model config ###########
+base_model: google/gemma-3-4b-it
+chat_template: gemma3
+######### End config ###########
+
+processor_type: AutoProcessor
+
+skip_prepare_dataset: true
+remove_unused_columns: false  # leave columns in place as they are needed to handle image embeddings during training
+sample_packing: false  # not yet supported with multimodal
+image_size: 512
+image_resize_algorithm: bilinear
+
+
+
+# chat_template:  # see in next section
+
+# example dataset
+datasets:
+#  - path: HuggingFaceH4/llava-instruct-mix-vsft
+  - path: philschmid/amazon-product-descriptions-vlm
+    type: chat_template
+    split: train[:1%]
+    field_messages: messages
+
+datasets:
+  #- path: HuggingFaceH4/llava-instruct-mix-vsft
+  - path: ./vlm_train.jsonl       # ← your locally serialized file
+    type: chat_template           # ← tells Axolotl “use messages→template”
+    field_messages: messages      # ← the field name in each JSON record
+
+
+######### Training #########
+micro_batch_size: 2                  # samples per GPU step
+batch_size: 32                       # effective global batch
+gradient_accumulation_steps: 16      # 2 × 16 = 32
+
+
+# (optional) if doing lora, only finetune the Language model,
+# leave the vision model and vision tower frozen
+# load_in_8bit: true
+adapter: lora
+lora_target_modules: 'model.language_model.layers.[\d]+.(mlp|cross_attn|self_attn).(up|down|gate|q|k|v|o)_proj'
+
+# (optional) if you want to resize images to a set size
+image_size: 512
+image_resize_algorithm: bilinear
+
+
